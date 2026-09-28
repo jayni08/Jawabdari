@@ -79,6 +79,22 @@ def is_under_guarantee(dlp_end_date, on_date):
     return to_date(on_date) <= to_date(dlp_end_date)
 
 
+def format_inr(amount):
+    """Indian-style money text: 45000 -> 'Rs 45,000', 1250000 -> 'Rs 12.5 lakh',
+    52000000 -> 'Rs 5.2 crore'."""
+    amount = int(amount or 0)
+
+    def short(value):
+        # up to 2 decimals, without trailing zeros: 12.50 -> 12.5, 1.00 -> 1
+        return f"{value:.2f}".rstrip("0").rstrip(".")
+
+    if amount >= 1_00_00_000:
+        return f"Rs {short(amount / 1_00_00_000)} crore"
+    if amount >= 1_00_000:
+        return f"Rs {short(amount / 1_00_000)} lakh"
+    return f"Rs {amount:,}"
+
+
 # ---------------------------------------------------------------------------
 # Read helpers used by other functions and by the pages
 # ---------------------------------------------------------------------------

@@ -214,3 +214,13 @@ def test_refresh_lifecycle_and_timeline_order(conn):
     assert s.get_work(conn, wid)["lifecycle_stage"] == "Guarantee Ended"
     events = [e["event_type"] for e in s.get_work_timeline(conn, wid)]
     assert events == ["WORK_REGISTERED", "NOTICE_SENT", "GUARANTEE_ENDED"]
+
+
+def test_format_inr():
+    assert s.format_inr(1250000) == "Rs 12.5 lakh"
+    assert s.format_inr(52000000) == "Rs 5.2 crore"
+    assert s.format_inr(1_00_00_000) == "Rs 1 crore"
+    assert s.format_inr(1_00_000) == "Rs 1 lakh"
+    assert s.format_inr(45000) == "Rs 45,000"
+    assert s.format_inr(0) == "Rs 0"
+    assert s.format_inr(12_34_56_789) == "Rs 12.35 crore"

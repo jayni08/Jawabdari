@@ -190,3 +190,49 @@ def test_portal_deposit_release_rules():
     status = conn.execute("SELECT deposit_status FROM works WHERE id=?", (ok_ids[0],)).fetchone()[0]
     conn.close()
     assert status == "Released"
+
+
+# ---------- Stage 8: Public Board ----------
+
+BOARD_PAGE = str(ROOT / "pages" / "4_Public_Board.py")
+
+
+def load_board(work_id=None):
+    at = AppTest.from_file(BOARD_PAGE, default_timeout=60)
+    if work_id:
+        at.query_params["work_id"] = work_id
+    at.run()
+    assert not at.exception, at.exception
+    return at
+
+
+def all_markdown(at):
+    return " ".join(m.value for m in at.markdown)
+
+
+def test_board_without_id_shows_picker():
+    at = load_board()
+    assert len(at.selectbox) == 1
+
+
+def test_board_under_guarantee():
+    at = load_board("W-0001")
+    text = all_markdown(at)
+    assert "UNDER GUARANTEE until" in text and "Built by" in text and "★" in text
+
+
+def test_board_guarantee_ended():
+    at = load_board("W-0007")
+    assert "GUARANTEE ENDED" in all_markdown(at)
+
+
+def test_board_unknown_id_is_friendly():
+    at = load_board("W-9999")
+    assert at.warning and len(at.selectbox) == 1
+
+
+def test_board_in_gujarati():
+    at = load_board("W-0001")
+    at.radio[0].set_value("gu").run()
+    assert not at.exception
+    assert "ગેરંટીમાં" in all_markdown(at)

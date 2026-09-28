@@ -5,6 +5,7 @@ and a QR code is generated to fix on site so citizens can see who is responsible
 """
 
 from io import BytesIO
+from urllib.parse import urlsplit
 
 import pandas as pd
 import qrcode
@@ -22,6 +23,18 @@ db.init_db()
 seed.ensure_seeded()
 conn = db.get_conn()
 today = s.local_today()
+
+
+def app_base_url():
+    """The address people are using right now (localhost, Wi-Fi IP or the live site),
+    so QR links always open the same app. Falls back to config.BASE_URL."""
+    try:
+        parts = urlsplit(st.context.url or "")
+        if parts.scheme and parts.netloc:
+            return f"{parts.scheme}://{parts.netloc}"
+    except Exception:
+        pass
+    return config.BASE_URL.rstrip("/")
 
 
 def make_qr_png(text):
@@ -157,7 +170,8 @@ if last_id:
         st.success(f"Registered **{work['id']} — {s.safe_md(work['name'])}**. Guarantee until "
                    f"{work['dlp_end_date']}; deposit {s.format_inr(work['security_deposit_rs'])} held.",
                    icon=":material/check_circle:")
-        qr_url = f"{config.BASE_URL}/Public_Board?work_id={work['id']}"
+        base_url = app_base_url()
+        qr_url = f"{base_url}/Public_Board?work_id={work['id']}"
         png = make_qr_png(qr_url)
         with st.container(border=True):
             qr_col, info_col = st.columns([1, 2], vertical_alignment="center")
@@ -168,6 +182,12 @@ if last_id:
                 st.code(qr_url, language=None)
                 st.download_button("Download QR (PNG)", data=png, icon=":material/download:",
                                    file_name=f"{work['id']}_qr.png", mime="image/png")
+            host = urlsplit(base_url).hostname or ""
+            if host in ("localhost", "127.0.0.1"):
+                st.info("This QR uses **localhost**, which only opens on this laptop. To test with your "
+                        "phone, open the app using the **Network URL** shown in Terminal "
+                        "(http://192.168.x.x:8501) on the same Wi-Fi, or use the deployed app, then "
+                        "register again.", icon=":material/smartphone:")
 
 # ---------------------------------------------------------------------------
 # Recent works

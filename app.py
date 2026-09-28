@@ -7,7 +7,6 @@ queries take milliseconds, and it guarantees the dashboard is always up to date
 after actions on the other pages.
 """
 
-from datetime import date
 
 import pandas as pd
 import plotly.express as px
@@ -23,7 +22,7 @@ st.set_page_config(page_title="Jawabdari | Dashboard", page_icon="🏗️", layo
 db.init_db()
 seed.ensure_seeded()
 conn = db.get_conn()
-today = date.today()
+today = s.local_today()
 s.refresh_overdue(conn, today)
 s.refresh_lifecycle(conn, today)
 

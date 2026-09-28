@@ -5,7 +5,6 @@ Tab 2 - Engineer / Accounts: verifies repairs (approve / reject) and releases de
         only when the guarantee has ended and nothing is pending.
 """
 
-from datetime import date
 
 import streamlit as st
 
@@ -18,7 +17,7 @@ st.set_page_config(page_title="Contractor Portal | Jawabdari", page_icon="🧾",
 db.init_db()
 seed.ensure_seeded()
 conn = db.get_conn()
-today = date.today()
+today = s.local_today()
 s.refresh_overdue(conn, today)
 s.refresh_lifecycle(conn, today)
 

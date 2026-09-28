@@ -11,7 +11,7 @@ Conventions
 """
 
 import calendar
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -28,6 +28,13 @@ UNRESOLVED_STATUSES = ("Open", "Notice Sent", "Overdue", "Repaired - Pending Ver
 # ---------------------------------------------------------------------------
 # Small date helpers
 # ---------------------------------------------------------------------------
+
+def local_today():
+    """Today's date in India (IST, UTC+5:30), whatever time zone the server runs in.
+    Streamlit Cloud runs on UTC, so local_today() would be a day behind before 5:30am IST."""
+    offset = timezone(timedelta(minutes=config.UTC_OFFSET_MINUTES))
+    return datetime.now(offset).date()
+
 
 def to_date(value):
     """Accept a date or a 'YYYY-MM-DD' string and return a date."""
@@ -127,7 +134,7 @@ def add_contractor(conn, name, phone=None, gst_no=None, on_date=None):
     new_id = db.next_id("contractors", "C", 3, conn)
     conn.execute(
         "INSERT INTO contractors (id, name, phone, gst_no, created_at) VALUES (?, ?, ?, ?, ?)",
-        (new_id, name.strip(), phone, gst_no, iso(on_date or date.today())),
+        (new_id, name.strip(), phone, gst_no, iso(on_date or local_today())),
     )
     conn.commit()
     return new_id
@@ -141,7 +148,7 @@ def add_work(conn, name, asset_type, contractor_id, cost_rs, completion_date,
     If security_deposit_rs is not given, we assume 5% of the cost (a common tender norm).
     Returns the new work id (e.g. 'W-0012').
     """
-    today = to_date(today or date.today())
+    today = to_date(today or local_today())
 
     # --- validation (friendly messages for the UI) ---
     if not name or not name.strip():
@@ -185,7 +192,7 @@ def report_defect(conn, work_id, reported_by, reporter_name, description, langua
     Guarantee ended  -> City repairs: status 'Open'
     Returns a dict with the decision and a message for the user.
     """
-    on_date = to_date(on_date or date.today())
+    on_date = to_date(on_date or local_today())
     work = get_work(conn, work_id)
     if work is None:
         raise ValueError(f"Work {work_id} not found.")
@@ -235,7 +242,7 @@ def report_defect(conn, work_id, reported_by, reporter_name, description, langua
 def mark_repaired(conn, defect_id, repair_cost_rs, on_date=None):
     """Contractor (or city team) says the repair is done -> waits for engineer verification.
     repair_cost_rs = estimated cost of the repair (what the city would otherwise have paid)."""
-    on_date = to_date(on_date or date.today())
+    on_date = to_date(on_date or local_today())
     defect = get_defect(conn, defect_id)
     if defect is None:
         raise ValueError(f"Defect {defect_id} not found.")
@@ -259,7 +266,7 @@ def verify_repair(conn, defect_id, approved, on_date=None):
     """Engineer checks the repair.
     Approved -> Closed.  Rejected -> back to 'Notice Sent' with a fresh deadline
     (or back to 'Open' if the city was liable)."""
-    on_date = to_date(on_date or date.today())
+    on_date = to_date(on_date or local_today())
     defect = get_defect(conn, defect_id)
     if defect is None:
         raise ValueError(f"Defect {defect_id} not found.")
@@ -291,7 +298,7 @@ def verify_repair(conn, defect_id, approved, on_date=None):
 def refresh_overdue(conn, today=None):
     """Mark every 'Notice Sent' defect whose deadline has passed as 'Overdue'.
     Deadline day itself is NOT overdue. Returns how many were changed."""
-    today = iso(today or date.today())
+    today = iso(today or local_today())
     rows = conn.execute(
         "SELECT id, work_id FROM defects WHERE status = 'Notice Sent' AND notice_deadline < ?",
         (today,),
@@ -306,7 +313,7 @@ def refresh_overdue(conn, today=None):
 def refresh_lifecycle(conn, today=None):
     """Move works whose guarantee has ended from 'Under Guarantee' to 'Guarantee Ended'.
     (The deposit stays Held until accounts releases it.) Returns how many were changed."""
-    today = iso(today or date.today())
+    today = iso(today or local_today())
     rows = conn.execute(
         "SELECT id, dlp_end_date FROM works WHERE lifecycle_stage = 'Under Guarantee' AND dlp_end_date < ?",
         (today,),
@@ -331,7 +338,7 @@ def daily_refresh(conn, today=None):
 def can_release_deposit(conn, work_id, today=None):
     """Deposit can be released only if the guarantee has ENDED and no defect is unresolved.
     Returns (True/False, reason)."""
-    today = to_date(today or date.today())
+    today = to_date(today or local_today())
     work = get_work(conn, work_id)
     if work is None:
         return False, f"Work {work_id} not found."
@@ -352,7 +359,7 @@ def can_release_deposit(conn, work_id, today=None):
 
 def release_deposit(conn, work_id, today=None):
     """Release the deposit if allowed. Returns (True/False, reason)."""
-    today = to_date(today or date.today())
+    today = to_date(today or local_today())
     allowed, reason = can_release_deposit(conn, work_id, today)
     if not allowed:
         return False, reason
@@ -374,7 +381,7 @@ def release_deposit(conn, work_id, today=None):
 def expiring_soon(conn, today=None, days=None):
     """Works whose guarantee ends within `days` from today -> inspect them BEFORE expiry,
     because any defect found after expiry becomes the city's cost. Returns a DataFrame."""
-    today = to_date(today or date.today())
+    today = to_date(today or local_today())
     days = config.EXPIRY_ALERT_DAYS if days is None else days
     limit = today + timedelta(days=days)
     df = pd.read_sql_query(

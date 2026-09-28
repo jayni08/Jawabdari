@@ -224,3 +224,9 @@ def test_format_inr():
     assert s.format_inr(45000) == "Rs 45,000"
     assert s.format_inr(0) == "Rs 0"
     assert s.format_inr(12_34_56_789) == "Rs 12.35 crore"
+
+
+def test_local_today_is_india_date():
+    from datetime import datetime, timedelta, timezone
+    ist = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
+    assert s.local_today() == ist

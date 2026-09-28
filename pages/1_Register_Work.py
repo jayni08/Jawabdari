@@ -4,7 +4,6 @@ The guarantee (DLP) is calculated automatically, the deposit is marked Held,
 and a QR code is generated to fix on site so citizens can see who is responsible.
 """
 
-from datetime import date
 from io import BytesIO
 
 import pandas as pd
@@ -73,7 +72,7 @@ with left:
 with right:
     contractor_label = st.selectbox("Contractor *", list(contractor_labels.keys()))
     cost_rs = st.number_input("Cost (₹) *", min_value=0, value=50_00_000, step=1_00_000)
-    completion = st.date_input("Completion date *", value=date.today(), max_value=date.today())
+    completion = st.date_input("Completion date *", value=s.local_today(), max_value=s.local_today())
     deposit_rs = st.number_input("Security deposit (₹) — leave 0 to use 5% of cost",
                                  min_value=0, value=0, step=10_000)
 
@@ -81,7 +80,7 @@ with right:
     if cost_rs > 0:
         months, end_date = s.calc_dlp(cost_rs, completion)
         deposit_preview = deposit_rs or round(cost_rs * 0.05)
-        status = "🟢 active" if s.is_under_guarantee(end_date, date.today()) else "⚪ already ended"
+        status = "🟢 active" if s.is_under_guarantee(end_date, s.local_today()) else "⚪ already ended"
         st.info(f"**DLP: {months} months, guarantee until {end_date}** ({status})  \n"
                 f"Deposit held: ₹{deposit_preview:,}")
     else:
@@ -93,7 +92,7 @@ if st.button("Register work", type="primary"):
         errors.append("Work name is required.")
     if cost_rs <= 0:
         errors.append("Cost must be greater than 0.")
-    if completion > date.today():
+    if completion > s.local_today():
         errors.append("Completion date cannot be in the future.")
     if not contractor_labels:
         errors.append("Add a contractor first.")

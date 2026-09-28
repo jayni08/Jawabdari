@@ -9,7 +9,7 @@ The data is built so every demo case is always present, whatever today's date is
 """
 
 import random
-from datetime import date, timedelta
+from datetime import timedelta
 
 import db
 import services as s
@@ -115,7 +115,7 @@ def jitter(value, spread=0.006):
 def seed(today=None):
     """Wipe the database and insert the full demo dataset. Returns the summary dict."""
     random.seed(42)
-    today = today or date.today()
+    today = today or s.local_today()
     db.reset_db()
     conn = db.get_conn()
 
@@ -236,7 +236,7 @@ def seed(today=None):
 
 def get_summary(conn, today=None):
     """Counts used for the printout and for quick checks."""
-    today = today or date.today()
+    today = today or s.local_today()
 
     def count(sql):
         return conn.execute(sql).fetchone()[0]
@@ -272,7 +272,7 @@ def ensure_seeded():
 
 if __name__ == "__main__":
     result = seed()
-    print("Jawabdari demo data created for", date.today().isoformat())
+    print("Jawabdari demo data created for", s.local_today().isoformat())
     for key, value in result.items():
         label = key.replace("_", " ").capitalize()
         print(f"  {label:<24} {value:,}" if isinstance(value, int) else f"  {label:<24} {value}")

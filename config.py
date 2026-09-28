@@ -17,3 +17,7 @@ NOTICE_DAYS = 7
 
 # Show "inspect before guarantee expires" alerts this many days in advance
 EXPIRY_ALERT_DAYS = 30
+
+# India Standard Time = UTC + 5:30 (330 minutes). Used for "today" everywhere,
+# because Streamlit Cloud servers run on UTC.
+UTC_OFFSET_MINUTES = 330

@@ -5,7 +5,6 @@ Shows who built the work, what it cost, whether it is still under guarantee,
 the contractor's rating, and a big button to report a problem.
 """
 
-from datetime import date
 
 import streamlit as st
 from streamlit.errors import StreamlitPageNotFoundError
@@ -20,7 +19,7 @@ st.set_page_config(page_title="Public Board | Jawabdari", page_icon="🪧", layo
 db.init_db()
 seed.ensure_seeded()
 conn = db.get_conn()
-today = date.today()
+today = s.local_today()
 s.daily_refresh(conn, today)
 
 EVENT_ICONS = {

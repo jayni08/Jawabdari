@@ -6,7 +6,6 @@ The LIABILITY CHECK runs instantly:
 """
 
 import uuid
-from datetime import date
 from pathlib import Path
 
 import streamlit as st
@@ -88,7 +87,7 @@ if st.button(t("submit", lang), type="primary"):
         if photo is not None:
             UPLOAD_DIR.mkdir(exist_ok=True)
             extension = Path(photo.name).suffix.lower() or ".jpg"
-            photo_path = str(UPLOAD_DIR / f"{work_id}_{date.today()}_{uuid.uuid4().hex[:8]}{extension}")
+            photo_path = str(UPLOAD_DIR / f"{work_id}_{s.local_today()}_{uuid.uuid4().hex[:8]}{extension}")
             Path(photo_path).write_bytes(photo.getbuffer())
 
         try:

@@ -186,12 +186,11 @@ def test_portal_engineer_approve_and_reject():
 
 def test_portal_deposit_release_rules():
     import services as s
-    from datetime import date
     at = load_portal()
     conn = db.get_conn()
     held = [r[0] for r in conn.execute("SELECT id FROM works WHERE deposit_status='Held'")]
-    ok_ids = [w for w in held if s.can_release_deposit(conn, w, date.today())[0]]
-    blocked = [w for w in held if not s.can_release_deposit(conn, w, date.today())[0]]
+    ok_ids = [w for w in held if s.can_release_deposit(conn, w, s.local_today())[0]]
+    blocked = [w for w in held if not s.can_release_deposit(conn, w, s.local_today())[0]]
     conn.close()
     assert ok_ids and blocked
 

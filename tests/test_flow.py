@@ -6,7 +6,7 @@ Run with:  pytest -q
 """
 
 import sys
-from datetime import date, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -28,7 +28,7 @@ def conn(tmp_path, monkeypatch):
 
 
 def test_full_lifecycle_story(conn):
-    today = date.today()
+    today = s.local_today()
     completed = s.add_months(today, -6)          # finished 6 months ago
     later = s.add_months(today, 31)              # 31 months in the future
 

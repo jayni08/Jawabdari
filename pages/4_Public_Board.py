@@ -72,11 +72,11 @@ else:
 st.markdown(
     f"""
     <div style="border:1px solid #ddd;border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
-      <div style="font-size:1.5rem;font-weight:700;line-height:1.3;">{work['name']}</div>
-      <div style="color:#666;margin-bottom:0.8rem;">{work['id']}</div>
+      <div style="font-size:1.5rem;font-weight:700;line-height:1.3;">{s.safe_html(work['name'])}</div>
+      <div style="color:#666;margin-bottom:0.8rem;">{s.safe_html(work['id'])}</div>
       <div style="background:{bg};color:{fg};border-radius:10px;padding:0.9rem;text-align:center;
-                  font-size:1.35rem;font-weight:800;letter-spacing:0.5px;">🛡️ {badge}</div>
-      <div style="text-align:center;margin-top:0.5rem;font-size:1.05rem;">{note}</div>
+                  font-size:1.35rem;font-weight:800;letter-spacing:0.5px;">🛡️ {s.safe_html(badge)}</div>
+      <div style="text-align:center;margin-top:0.5rem;font-size:1.05rem;">{s.safe_html(note)}</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -98,9 +98,9 @@ last_repair = conn.execute(
 
 st.markdown(
     f"""
-- **{t('ward', lang)}:** {work['ward'] or '-'}
+- **{t('ward', lang)}:** {s.safe_md(s.safe_html(work['ward'] or '-'))}
 - **{t('asset_type', lang)}:** {t(work['asset_type'], lang)}
-- **{t('built_by', lang)}:** {work['contractor_name']}
+- **{t('built_by', lang)}:** {s.safe_md(s.safe_html(work['contractor_name']))}
 - **{t('cost', lang)}:** {s.format_inr(work['cost_rs'])}
 - **{t('completed_on', lang)}:** {work['completion_date']}
 - **{t('rating', lang)}:** <span style="color:#f5a623;font-size:1.3rem;">{stars(score)}</span> ({score}/100)
@@ -119,7 +119,7 @@ try:
 except StreamlitPageNotFoundError:
     # Happens only when this page is run on its own (e.g. in tests): use a plain link instead
     st.markdown(
-        f'<a href="Report_Defect?work_id={work_id}" target="_self" style="display:block;'
+        f'<a href="Report_Defect?work_id={s.safe_html(work_id)}" target="_self" style="display:block;'
         f'text-align:center;background:#1a73e8;color:white;padding:0.9rem;border-radius:10px;'
         f'font-size:1.2rem;font-weight:700;text-decoration:none;">📢 {t("report_button", lang)}</a>',
         unsafe_allow_html=True,
@@ -131,6 +131,6 @@ except StreamlitPageNotFoundError:
 with st.expander(f"🕒 {t('timeline', lang)}"):
     for event in s.get_work_timeline(conn, work_id):
         icon = EVENT_ICONS.get(event["event_type"], "•")
-        st.markdown(f"{icon} **{event['created_at'][:10]}** — {event['details']}")
+        st.markdown(f"{icon} **{event['created_at'][:10]}** — {s.safe_md(event['details'])}")
 
 conn.close()

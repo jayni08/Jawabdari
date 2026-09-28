@@ -9,6 +9,7 @@ The data is built so every demo case is always present, whatever today's date is
 """
 
 import random
+import threading
 from datetime import timedelta
 
 import db
@@ -258,16 +259,29 @@ def get_summary(conn, today=None):
     }
 
 
+# One lock shared by all users of the app (Streamlit runs every visitor in the same process),
+# so two people opening the app at the same moment cannot both start seeding.
+_SEED_LOCK = threading.Lock()
+
+
+def _works_count():
+    conn = db.get_conn()
+    count = conn.execute("SELECT COUNT(*) FROM works").fetchone()[0]
+    conn.close()
+    return count
+
+
 def ensure_seeded():
     """Create tables, and fill demo data only if there are no works yet.
-    Returns True if it seeded. Safe to call on every page load."""
+    Returns True if it seeded. Safe to call on every page load, from many users at once."""
     db.init_db()
-    conn = db.get_conn()
-    empty = conn.execute("SELECT COUNT(*) FROM works").fetchone()[0] == 0
-    conn.close()
-    if empty:
+    if _works_count() > 0:          # fast path: no locking once data exists
+        return False
+    with _SEED_LOCK:
+        if _works_count() > 0:      # another visitor seeded while we waited
+            return False
         seed()
-    return empty
+        return True
 
 
 if __name__ == "__main__":

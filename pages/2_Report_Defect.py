@@ -32,7 +32,7 @@ def result_card(text, colour, border):
     """Big, easy-to-read coloured card for the result."""
     st.markdown(
         f"""<div style="background:{colour};border-left:8px solid {border};padding:1.2rem 1.4rem;
-        border-radius:10px;font-size:1.25rem;line-height:1.6;color:#1a1a1a;">{text}</div>""",
+        border-radius:10px;font-size:1.25rem;line-height:1.6;color:#1a1a1a;">{s.safe_html(text)}</div>""",
         unsafe_allow_html=True,
     )
 

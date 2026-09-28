@@ -11,6 +11,8 @@ Conventions
 """
 
 import calendar
+import html
+import re
 from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
@@ -84,6 +86,16 @@ def calc_dlp(cost_rs, completion_date):
 def is_under_guarantee(dlp_end_date, on_date):
     """True if on_date is on or before the DLP end date (the end date itself is still covered)."""
     return to_date(on_date) <= to_date(dlp_end_date)
+
+
+def safe_html(value):
+    """Escape text typed by users before putting it inside HTML (stops <script> etc.)."""
+    return html.escape("" if value is None else str(value))
+
+
+def safe_md(value):
+    """Escape Markdown symbols in user text so names like '*Best* Infra' show literally."""
+    return re.sub(r"([\\`*_{}\[\]()#+\-!|>~<])", r"\\\1", "" if value is None else str(value))
 
 
 def format_inr(amount):

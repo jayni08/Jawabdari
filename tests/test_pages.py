@@ -269,3 +269,39 @@ def test_dashboard_loads_with_kpis_and_charts():
     assert any("₹" in str(m.value) for m in at.metric)
     assert len(at.get("plotly_chart")) == 2       # bar chart + map
     assert len(at.dataframe) == 2                 # expiring table + leaderboard
+
+
+# ---------- Stage 11: safety fixes ----------
+
+def test_board_escapes_html_in_names():
+    import services as s
+    db.init_db()
+    conn = db.get_conn()
+    cid = s.add_contractor(conn, "<b>Evil</b> Infra")
+    wid = s.add_work(conn, "<script>alert(1)</script> Road", "Road", cid, 10_00_000,
+                     s.local_today(), ward="Paldi")
+    conn.close()
+    at = load_board(wid)
+    text = all_markdown(at)
+    assert "<script>" not in text and "&lt;script&gt;" in text
+    assert "<b>Evil</b>" not in text
+
+
+def test_seed_is_safe_when_many_visitors_arrive_together():
+    import threading
+    import seed
+    errors = []
+
+    def visit():
+        try:
+            seed.ensure_seeded()
+        except Exception as err:  # pragma: no cover - should never happen
+            errors.append(err)
+
+    threads = [threading.Thread(target=visit) for _ in range(5)]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join()
+    assert not errors
+    assert work_count() == 40

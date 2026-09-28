@@ -230,3 +230,9 @@ def test_local_today_is_india_date():
     from datetime import datetime, timedelta, timezone
     ist = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
     assert s.local_today() == ist
+
+
+def test_safe_html_and_md():
+    assert s.safe_html("<script>x</script>") == "&lt;script&gt;x&lt;/script&gt;"
+    assert s.safe_html(None) == ""
+    assert s.safe_md("*Best* Infra") == r"\*Best\* Infra"

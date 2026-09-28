@@ -86,9 +86,9 @@ with tab_contractor:
         with st.container(border=True):
             left, right = st.columns([3, 2])
             with left:
-                st.markdown(f"**{n['id']} · {n['work_name']}** ({n['work_id']}, {n['ward']})")
-                st.write(f"Problem: {n['description']}")
-                st.caption(f"Reported on {n['reported_on']} by {n['reporter_name'] or 'Anonymous'}")
+                st.markdown(f"**{n['id']} · {s.safe_md(n['work_name'])}** ({n['work_id']}, {s.safe_md(n['ward'])})")
+                st.text(f"Problem: {n['description']}")
+                st.caption(f"Reported on {n['reported_on']} by {s.safe_md(n['reporter_name'] or 'Anonymous')}")
                 if days_left < 0:
                     st.markdown(f":red[**OVERDUE by {-days_left} day(s)** — deadline was "
                                 f"{n['notice_deadline']}. This lowers your score.]")
@@ -128,15 +128,22 @@ with tab_engineer:
         with st.container(border=True):
             info, approve_col, reject_col = st.columns([4, 1, 1])
             who = p["contractor"] if p["liable_party"] == "Contractor" else "City team"
-            info.markdown(f"**{p['id']} · {p['work_name']}** ({p['work_id']})  \n"
-                          f"{p['description']} — repaired by {who} on {p['repaired_on']}, "
+            info.markdown(f"**{p['id']} · {s.safe_md(p['work_name'])}** ({p['work_id']})  \n"
+                          f"{s.safe_md(p['description'])} — repaired by {s.safe_md(who)} on {p['repaired_on']}, "
                           f"value ₹{p['repair_cost_rs']:,}")
             if approve_col.button("👍 Approve", key=f"approve_{p['id']}"):
-                s.verify_repair(conn, p["id"], True, today)
-                flash_and_rerun(f"{p['id']} approved and closed.")
+                try:
+                    s.verify_repair(conn, p["id"], True, today)
+                    flash_and_rerun(f"{p['id']} approved and closed.")
+                except ValueError:
+                    # e.g. already approved in another tab - just refresh the list
+                    flash_and_rerun(f"{p['id']} was already handled. List refreshed.")
             if reject_col.button("👎 Reject", key=f"reject_{p['id']}"):
-                s.verify_repair(conn, p["id"], False, today)
-                flash_and_rerun(f"{p['id']} rejected. New 7-day notice sent.")
+                try:
+                    s.verify_repair(conn, p["id"], False, today)
+                    flash_and_rerun(f"{p['id']} rejected. New 7-day notice sent.")
+                except ValueError:
+                    flash_and_rerun(f"{p['id']} was already handled. List refreshed.")
 
     st.divider()
     st.subheader("💰 Security deposit release")
@@ -159,14 +166,17 @@ with tab_engineer:
         )
         w = held_map[work_id]
         allowed, reason = s.can_release_deposit(conn, work_id, today)
-        st.write(f"Contractor: **{w['contractor']}** · Deposit held: **₹{w['security_deposit_rs']:,}**")
+        st.write(f"Contractor: **{s.safe_md(w['contractor'])}** · Deposit held: **₹{w['security_deposit_rs']:,}**")
         if allowed:
             st.success(f"✅ {reason}")
         else:
             st.warning(f"⛔ {reason}")
 
         if st.button("Release deposit", type="primary", disabled=not allowed):
-            ok, message = s.release_deposit(conn, work_id, today)
+            try:
+                ok, message = s.release_deposit(conn, work_id, today)
+            except Exception as err:  # never crash the accounts desk; show the reason instead
+                ok, message = False, f"Could not release deposit: {err}"
             if ok:
                 flash_and_rerun(f"Deposit of ₹{w['security_deposit_rs']:,} for {work_id} released.")
             else:

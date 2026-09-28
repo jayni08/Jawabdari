@@ -119,7 +119,7 @@ last_id = st.session_state.get("last_work_id")
 if last_id:
     work = s.get_work(conn, last_id)
     if work:
-        st.success(f"✅ Registered **{work['id']} — {work['name']}**. Guarantee until "
+        st.success(f"✅ Registered **{work['id']} — {s.safe_md(work['name'])}**. Guarantee until "
                    f"{work['dlp_end_date']}; deposit ₹{work['security_deposit_rs']:,} held.")
         qr_url = f"{config.BASE_URL}/Public_Board?work_id={work['id']}"
         png = make_qr_png(qr_url)

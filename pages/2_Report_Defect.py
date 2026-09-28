@@ -1,8 +1,9 @@
-"""Report Defect - citizens (via QR code) and engineers report a problem.
+"""Report a problem - citizens (via QR code) and engineers report a defect.
 
 The LIABILITY CHECK runs instantly:
 - still under guarantee -> contractor must repair free, notice sent with a 7-day deadline
 - guarantee ended       -> added to the city's own maintenance queue
+Mobile-first: one column, big tap targets, three languages.
 """
 
 import uuid
@@ -13,9 +14,10 @@ import streamlit as st
 import db
 import seed
 import services as s
+import ui
 from i18n import LANGUAGES, t
 
-st.set_page_config(page_title="Report a Problem | Jawabdari", page_icon="📢")
+ui.setup("Report a problem", "📢", layout="centered")
 
 db.init_db()
 seed.ensure_seeded()
@@ -23,35 +25,25 @@ conn = db.get_conn()
 s.daily_refresh(conn)
 
 UPLOAD_DIR = Path("uploads")
+MAX_PHOTO_MB = 5
 # Problem keys (translated on screen) -> English text stored in the database
 PROBLEMS = {"pothole": "Pothole", "crack": "Crack", "waterlogging": "Waterlogging",
             "light": "Light not working", "other": "Other"}
-
-
-def result_card(text, colour, border):
-    """Big, easy-to-read coloured card for the result."""
-    st.markdown(
-        f"""<div style="background:{colour};border-left:8px solid {border};padding:1.2rem 1.4rem;
-        border-radius:10px;font-size:1.25rem;line-height:1.6;color:#1a1a1a;">{s.safe_html(text)}</div>""",
-        unsafe_allow_html=True,
-    )
-
+PROBLEM_ICONS = {"pothole": "🕳️", "crack": "⚡", "waterlogging": "🌊", "light": "💡", "other": "✏️"}
 
 # ---------------------------------------------------------------------------
-# Language + reporter
+# Language first (everything below is translated)
 # ---------------------------------------------------------------------------
-lang = st.radio("Language / भाषा / ભાષા", list(LANGUAGES.keys()),
-                format_func=lambda code: LANGUAGES[code], horizontal=True)
-st.title(f"📢 {t('title', lang)}")
-
-reporter = st.radio(t("reporter", lang), ["Citizen", "Engineer"],
-                    format_func=lambda r: t(r.lower(), lang), horizontal=True)
+lang = st.segmented_control("Language / भाषा / ભાષા", list(LANGUAGES.keys()), default="en",
+                            format_func=lambda code: LANGUAGES[code], required=True)
+ui.hero(t("title", lang), t("hero_sub", lang), eyebrow="Jawabdari · जवाबदारी · જવાબદારી",
+        show_brand=False)
 
 # ---------------------------------------------------------------------------
-# Choose the work (preselected if the QR link has ?work_id=W-0012)
+# Which work? (preselected if the QR link has ?work_id=W-0012)
 # ---------------------------------------------------------------------------
 works = conn.execute("SELECT id, name, ward FROM works ORDER BY id").fetchall()
-work_labels = {w["id"]: f"{w['id']} - {w['name']} ({w['ward']})" for w in works}
+work_labels = {w["id"]: f"{w['id']} · {w['name']} ({w['ward']})" for w in works}
 work_ids = list(work_labels.keys())
 
 url_work = st.query_params.get("work_id")
@@ -59,27 +51,33 @@ preselect = work_ids.index(url_work) if url_work in work_labels else None
 if url_work and url_work not in work_labels:
     st.warning(f"Work '{url_work}' not found. Please choose from the list.")
 
-work_id = st.selectbox(t("select_work", lang), work_ids, index=preselect,
-                       format_func=lambda wid: work_labels[wid],
-                       placeholder=t("select_placeholder", lang))
+with st.container(border=True):
+    work_id = st.selectbox(t("select_work", lang), work_ids, index=preselect,
+                           format_func=lambda wid: work_labels[wid],
+                           placeholder=t("select_placeholder", lang))
 
-# ---------------------------------------------------------------------------
-# Problem details
-# ---------------------------------------------------------------------------
-problem = st.radio(t("problem_type", lang), list(PROBLEMS.keys()),
-                   format_func=lambda key: t(key, lang), horizontal=True)
-details = st.text_area(t("describe", lang), max_chars=500)
-photo = st.file_uploader(t("photo", lang), type=["jpg", "jpeg", "png"])
-reporter_name = st.text_input(t("your_name", lang), max_chars=80)
+    problem = st.pills(t("problem_type", lang), list(PROBLEMS.keys()), default="pothole",
+                       format_func=lambda key: f"{PROBLEM_ICONS[key]} {t(key, lang)}", required=True)
+    details = st.text_area(t("describe", lang), max_chars=500, height=90)
+    photo = st.file_uploader(t("photo", lang), type=["jpg", "jpeg", "png"])
+
+    c1, c2 = st.columns(2)
+    reporter = c1.segmented_control(t("reporter", lang), ["Citizen", "Engineer"], default="Citizen",
+                                    format_func=lambda r: t(r.lower(), lang), required=True)
+    reporter_name = c2.text_input(t("your_name", lang), max_chars=80)
+
+    submitted = st.button(t("submit", lang), type="primary", icon=":material/send:", width="stretch")
 
 # ---------------------------------------------------------------------------
 # Submit -> liability check
 # ---------------------------------------------------------------------------
-if st.button(t("submit", lang), type="primary"):
+if submitted:
     if work_id is None:
         st.error(t("no_work", lang))
     elif problem == "other" and not details.strip():
         st.error(t("describe_required", lang))
+    elif photo is not None and photo.size > MAX_PHOTO_MB * 1024 * 1024:
+        st.error(t("photo_too_big", lang))
     else:
         description = PROBLEMS[problem] + (f": {details.strip()}" if details.strip() else "")
 
@@ -99,17 +97,22 @@ if st.button(t("submit", lang), type="primary"):
         except ValueError as err:
             st.error(str(err))
 
-# Show the result (kept in session so it stays visible)
+# Show the result only for the work it belongs to (not after switching to another work)
 result = st.session_state.get("last_report")
-if result:
-    st.success(t("thank_you", lang))
+if result and result["work_id"] == work_id:
+    st.success(t("thank_you", lang), icon=":material/check_circle:")
     if result["under_guarantee"]:
-        text = t("under_guarantee", lang, dlp_end=result["dlp_end_date"],
-                 contractor=result["contractor_name"], deadline=result["notice_deadline"],
-                 defect_id=result["defect_id"])
-        result_card("🛡️ " + text, "#e6f4ea", "#1e8e3e")
+        ui.status_banner(
+            "🛡️ " + t("result_contractor_h", lang),
+            t("under_guarantee", lang, dlp_end=result["dlp_end_date"], contractor=result["contractor_name"],
+              deadline=result["notice_deadline"], defect_id=result["defect_id"]),
+            tone="green",
+        )
     else:
-        text = t("city_repair", lang, dlp_end=result["dlp_end_date"], defect_id=result["defect_id"])
-        result_card("🏛️ " + text, "#fff4e5", "#e8710a")
+        ui.status_banner(
+            "🏛️ " + t("result_city_h", lang),
+            t("city_repair", lang, dlp_end=result["dlp_end_date"], defect_id=result["defect_id"]),
+            tone="amber",
+        )
 
 conn.close()

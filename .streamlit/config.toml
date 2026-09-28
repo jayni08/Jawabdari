@@ -1,0 +1,23 @@
+# Jawabdari visual theme (Streamlit reads this automatically, locally and on Streamlit Cloud)
+
+[theme]
+base = "light"
+primaryColor = "#4338ca"              # deep indigo - buttons, links, focus
+backgroundColor = "#f6f7fb"           # soft off-white page
+secondaryBackgroundColor = "#eef0f8"  # inputs and widget backgrounds
+textColor = "#1c1d2b"
+borderColor = "#e2e4ef"
+showWidgetBorder = true
+baseRadius = "0.7rem"
+buttonRadius = "0.7rem"
+linkColor = "#4338ca"
+# Inter for text, Plus Jakarta Sans for headings (Gujarati/Hindi use the device's built-in fonts)
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFont = "Plus Jakarta Sans:https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+chartCategoricalColors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
+
+[client]
+toolbarMode = "minimal"
+
+[server]
+maxUploadSize = 5   # MB - photos of defects never need more

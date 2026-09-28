@@ -24,6 +24,7 @@ def temp_db(tmp_path, monkeypatch):
 
 ALL_PAGES = [
     "app.py",
+    "pages/0_Dashboard.py",
     "pages/1_Register_Work.py",
     "pages/2_Report_Defect.py",
     "pages/3_Contractor_Portal.py",
@@ -37,6 +38,10 @@ def test_every_page_runs_without_exceptions(page):
     at = AppTest.from_file(str(ROOT / page), default_timeout=60)
     at.run()
     assert not at.exception, f"{page}: {at.exception}"
+
+
+def page_text(at):
+    return " ".join(m.value for m in at.markdown)
 
 
 def load(path):
@@ -60,7 +65,7 @@ def work_count():
 def test_register_page_loads_and_seeds():
     at = load(REGISTER_PAGE)
     assert work_count() == 40                      # ensure_seeded() filled demo data
-    assert "12 months" in at.info[0].value         # default cost 50 lakh -> 12 months
+    assert "12-month guarantee" in page_text(at)  # default cost 50 lakh -> 12 months
     assert len(at.dataframe) == 1                  # recent works table shown
 
 
@@ -75,12 +80,12 @@ def test_register_page_creates_work_with_36_month_guarantee():
     at = load(REGISTER_PAGE)
     by_label(at.text_input, "Work name").input("SG Highway service road").run()
     by_label(at.number_input, "Cost").set_value(5_00_00_000).run()
-    assert "36 months" in at.info[0].value         # live preview updated
+    assert "36-month guarantee" in page_text(at)  # live preview updated
     by_label(at.button, "Register work").click().run()
     assert not at.exception
     assert work_count() == 41
     assert any("W-0041" in m.value for m in at.success)
-    assert any(b.label.startswith("⬇️ Download QR") for b in at.get("download_button"))
+    assert any(b.label.startswith("Download QR") for b in at.get("download_button"))
 
 
 # ---------- Stage 6: Report Defect ----------
@@ -114,7 +119,7 @@ def test_report_page_preselects_from_url():
 
 def test_report_other_needs_description():
     at = load_report("W-0001")
-    by_label(at.radio, "What is the problem").set_value("other").run()
+    at.pills[0].set_value("other").run()
     at.button[0].click().run()
     assert any("describe the problem" in e.value for e in at.error)
 
@@ -135,8 +140,8 @@ def test_report_old_work_goes_to_city():
 
 def test_report_in_gujarati():
     at = load_report("W-0001")
-    at.radio[0].set_value("gu").run()
-    assert at.title[0].value.endswith("સમસ્યા નોંધાવો")
+    at.segmented_control[0].set_value("gu").run()
+    assert "સમસ્યા નોંધાવો" in card_text(at)
     at.button[0].click().run()
     assert "મફત સમારકામ" in card_text(at)
 
@@ -249,14 +254,14 @@ def test_board_unknown_id_is_friendly():
 
 def test_board_in_gujarati():
     at = load_board("W-0001")
-    at.radio[0].set_value("gu").run()
+    at.segmented_control[0].set_value("gu").run()
     assert not at.exception
     assert "ગેરંટીમાં" in all_markdown(at)
 
 
 # ---------- Stage 9: Dashboard ----------
 
-DASHBOARD = str(ROOT / "app.py")
+DASHBOARD = str(ROOT / "pages" / "0_Dashboard.py")
 
 
 def test_dashboard_loads_with_kpis_and_charts():

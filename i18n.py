@@ -61,6 +61,12 @@ LABELS = {
         "Drain": 'Drain',
         "Building": 'Building',
         "Streetlight": 'Streetlight',
+        # --- UI extras ---
+        "hero_sub": 'Tell us what is broken. We instantly check who must fix it.',
+        "result_contractor_h": 'Contractor must repair it FREE',
+        "result_city_h": 'City will repair it',
+        "photo_too_big": 'Photo must be under 5 MB.',
+        "board_sub": 'See who built it, what it cost, and how long it is guaranteed.',
     },
     "hi": {
         "title": "समस्या दर्ज करें",
@@ -110,6 +116,12 @@ LABELS = {
         "Drain": 'नाली',
         "Building": 'इमारत',
         "Streetlight": 'स्ट्रीट लाइट',
+        # --- UI extras ---
+        "hero_sub": 'बताइए क्या टूटा है। हम तुरंत बताएंगे कि इसे कौन ठीक करेगा।',
+        "result_contractor_h": 'ठेकेदार मुफ्त में ठीक करेगा',
+        "result_city_h": 'नगर निगम ठीक करेगा',
+        "photo_too_big": 'फोटो 5 MB से छोटी होनी चाहिए।',
+        "board_sub": 'देखें किसने बनाया, कितनी लागत, और गारंटी कब तक है।',
     },
     "gu": {
         "title": "સમસ્યા નોંધાવો",
@@ -159,6 +171,12 @@ LABELS = {
         "Drain": 'ગટર',
         "Building": 'ઇમારત',
         "Streetlight": 'સ્ટ્રીટ લાઇટ',
+        # --- UI extras ---
+        "hero_sub": 'શું તૂટ્યું છે તે કહો. તેને કોણ ઠીક કરશે તે અમે તરત જણાવીશું.',
+        "result_contractor_h": 'કોન્ટ્રાક્ટર મફતમાં સમારકામ કરશે',
+        "result_city_h": 'મહાનગરપાલિકા સમારકામ કરશે',
+        "photo_too_big": 'ફોટો 5 MB થી નાનો હોવો જોઈએ.',
+        "board_sub": 'કોણે બનાવ્યું, કેટલો ખર્ચ, અને ગેરંટી ક્યાં સુધી છે તે જુઓ.',
     },
 }
 

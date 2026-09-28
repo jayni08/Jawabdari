@@ -236,3 +236,20 @@ def test_board_in_gujarati():
     at.radio[0].set_value("gu").run()
     assert not at.exception
     assert "ગેરંટીમાં" in all_markdown(at)
+
+
+# ---------- Stage 9: Dashboard ----------
+
+DASHBOARD = str(ROOT / "app.py")
+
+
+def test_dashboard_loads_with_kpis_and_charts():
+    at = AppTest.from_file(DASHBOARD, default_timeout=60)
+    at.run()
+    assert not at.exception, at.exception
+    assert len(at.metric) == 5
+    labels = [m.label for m in at.metric]
+    assert any("Money saved" in label for label in labels)
+    assert any("₹" in str(m.value) for m in at.metric)
+    assert len(at.get("plotly_chart")) == 2       # bar chart + map
+    assert len(at.dataframe) == 2                 # expiring table + leaderboard

@@ -122,3 +122,71 @@ def test_report_in_gujarati():
     assert at.title[0].value.endswith("સમસ્યા નોંધાવો")
     at.button[0].click().run()
     assert "મફત સમારકામ" in card_text(at)
+
+
+# ---------- Stage 7: Contractor Portal ----------
+
+PORTAL_PAGE = str(ROOT / "pages" / "3_Contractor_Portal.py")
+
+
+def load_portal():
+    at = AppTest.from_file(PORTAL_PAGE, default_timeout=60)
+    at.run()
+    assert not at.exception, at.exception
+    return at
+
+
+def defect_status(defect_id):
+    conn = db.get_conn()
+    status = conn.execute("SELECT status FROM defects WHERE id = ?", (defect_id,)).fetchone()[0]
+    conn.close()
+    return status
+
+
+def test_portal_contractor_can_mark_repaired():
+    at = load_portal()
+    by_label(at.selectbox, "Log in as contractor").set_value("C-006").run()  # weak contractor
+    repair_buttons = [b for b in at.button if b.key and b.key.startswith("repair_")]
+    assert repair_buttons, "weak contractor should have open notices"
+    defect_id = repair_buttons[0].key.split("_", 1)[1]
+    repair_buttons[0].click().run()
+    assert not at.exception
+    assert defect_status(defect_id) == "Repaired - Pending Verification"
+
+
+def test_portal_engineer_approve_and_reject():
+    at = load_portal()
+    approve = [b for b in at.button if b.key and b.key.startswith("approve_")]
+    assert len(approve) >= 2                     # seed has 2 pending verification
+    first = approve[0].key.split("_", 1)[1]
+    approve[0].click().run()
+    assert defect_status(first) == "Closed"
+    reject = [b for b in at.button if b.key and b.key.startswith("reject_")]
+    second = reject[0].key.split("_", 1)[1]
+    reject[0].click().run()
+    assert defect_status(second) in ("Notice Sent", "Open")
+
+
+def test_portal_deposit_release_rules():
+    import services as s
+    from datetime import date
+    at = load_portal()
+    conn = db.get_conn()
+    held = [r[0] for r in conn.execute("SELECT id FROM works WHERE deposit_status='Held'")]
+    ok_ids = [w for w in held if s.can_release_deposit(conn, w, date.today())[0]]
+    blocked = [w for w in held if not s.can_release_deposit(conn, w, date.today())[0]]
+    conn.close()
+    assert ok_ids and blocked
+
+    select = by_label(at.selectbox, "Select a work")
+    select.set_value(blocked[0]).run()
+    assert by_label(at.button, "Release deposit").disabled
+
+    by_label(at.selectbox, "Select a work").set_value(ok_ids[0]).run()
+    release = by_label(at.button, "Release deposit")
+    assert not release.disabled
+    release.click().run()
+    conn = db.get_conn()
+    status = conn.execute("SELECT deposit_status FROM works WHERE id=?", (ok_ids[0],)).fetchone()[0]
+    conn.close()
+    assert status == "Released"

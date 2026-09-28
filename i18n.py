@@ -1,0 +1,101 @@
+"""Simple translations for the citizen-facing pages (English, Hindi, Gujarati).
+
+NOTE: Hindi and Gujarati translations were drafted quickly for the hackathon and
+should be checked by a native speaker before real use. In production we would use
+Bhashini (Government of India's language platform) for more languages.
+
+Usage:
+    from i18n import t
+    t("title", "gu")
+    t("under_guarantee", "hi", dlp_end="2027-01-01", contractor="X", deadline="...", defect_id="D-0001")
+"""
+
+LANGUAGES = {"en": "English", "hi": "हिन्दी", "gu": "ગુજરાતી"}
+
+LABELS = {
+    "en": {
+        "title": "Report a problem",
+        "language": "Language",
+        "reporter": "I am a",
+        "citizen": "Citizen",
+        "engineer": "Engineer",
+        "select_work": "Which public work?",
+        "select_placeholder": "Search by name, ward or ID",
+        "problem_type": "What is the problem?",
+        "pothole": "Pothole",
+        "crack": "Crack",
+        "waterlogging": "Waterlogging",
+        "light": "Light not working",
+        "other": "Other",
+        "describe": "Describe the problem (optional)",
+        "describe_required": "Please describe the problem.",
+        "photo": "Add a photo (optional)",
+        "your_name": "Your name (optional)",
+        "submit": "Submit",
+        "no_work": "Please select a work.",
+        "thank_you": "Thank you! Your report is recorded.",
+        "under_guarantee": ("Under guarantee until {dlp_end}. Contractor {contractor} must repair "
+                            "FREE by {deadline}. Notice ID: {defect_id}"),
+        "city_repair": ("Guarantee ended on {dlp_end}. Added to city maintenance queue. "
+                        "ID: {defect_id}"),
+    },
+    "hi": {
+        "title": "समस्या दर्ज करें",
+        "language": "भाषा",
+        "reporter": "मैं हूँ",
+        "citizen": "नागरिक",
+        "engineer": "इंजीनियर",
+        "select_work": "कौन सा सार्वजनिक काम?",
+        "select_placeholder": "नाम, वार्ड या आईडी से खोजें",
+        "problem_type": "समस्या क्या है?",
+        "pothole": "गड्ढा",
+        "crack": "दरार",
+        "waterlogging": "जलभराव",
+        "light": "लाइट बंद है",
+        "other": "अन्य",
+        "describe": "समस्या बताएं (वैकल्पिक)",
+        "describe_required": "कृपया समस्या बताएं।",
+        "photo": "फोटो जोड़ें (वैकल्पिक)",
+        "your_name": "आपका नाम (वैकल्पिक)",
+        "submit": "जमा करें",
+        "no_work": "कृपया एक काम चुनें।",
+        "thank_you": "धन्यवाद! आपकी शिकायत दर्ज हो गई है।",
+        "under_guarantee": ("{dlp_end} तक गारंटी में है। ठेकेदार {contractor} को {deadline} तक "
+                            "मुफ्त मरम्मत करनी होगी। नोटिस आईडी: {defect_id}"),
+        "city_repair": ("गारंटी {dlp_end} को खत्म हो गई। नगर निगम की मरम्मत सूची में जोड़ा गया। "
+                        "आईडी: {defect_id}"),
+    },
+    "gu": {
+        "title": "સમસ્યા નોંધાવો",
+        "language": "ભાષા",
+        "reporter": "હું છું",
+        "citizen": "નાગરિક",
+        "engineer": "ઇજનેર",
+        "select_work": "કયું જાહેર કામ?",
+        "select_placeholder": "નામ, વોર્ડ અથવા ID થી શોધો",
+        "problem_type": "સમસ્યા શું છે?",
+        "pothole": "ખાડો",
+        "crack": "તિરાડ",
+        "waterlogging": "પાણી ભરાવું",
+        "light": "લાઇટ બંધ છે",
+        "other": "અન્ય",
+        "describe": "સમસ્યા લખો (વૈકલ્પિક)",
+        "describe_required": "કૃપા કરીને સમસ્યા લખો.",
+        "photo": "ફોટો ઉમેરો (વૈકલ્પિક)",
+        "your_name": "તમારું નામ (વૈકલ્પિક)",
+        "submit": "મોકલો",
+        "no_work": "કૃપા કરીને એક કામ પસંદ કરો.",
+        "thank_you": "આભાર! તમારી ફરિયાદ નોંધાઈ ગઈ છે.",
+        "under_guarantee": ("{dlp_end} સુધી ગેરંટીમાં છે. કોન્ટ્રાક્ટર {contractor} એ {deadline} "
+                            "સુધીમાં મફત સમારકામ કરવું પડશે. નોટિસ ID: {defect_id}"),
+        "city_repair": ("ગેરંટી {dlp_end} ના રોજ પૂરી થઈ. મહાનગરપાલિકાની સમારકામ યાદીમાં ઉમેર્યું. "
+                        "ID: {defect_id}"),
+    },
+}
+
+
+def t(key, lang="en", **values):
+    """Return the label for `key` in `lang`, falling back to English, then to the key itself.
+    Extra keyword arguments fill {placeholders} in the text."""
+    text = LABELS.get(lang, {}).get(key) or LABELS["en"].get(key) or key
+    return text.format(**values) if values else text

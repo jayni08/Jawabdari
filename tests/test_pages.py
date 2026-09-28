@@ -64,3 +64,61 @@ def test_register_page_creates_work_with_36_month_guarantee():
     assert work_count() == 41
     assert any("W-0041" in m.value for m in at.success)
     assert any(b.label.startswith("⬇️ Download QR") for b in at.get("download_button"))
+
+
+# ---------- Stage 6: Report Defect ----------
+
+REPORT_PAGE = str(ROOT / "pages" / "2_Report_Defect.py")
+
+
+def load_report(work_id=None):
+    at = AppTest.from_file(REPORT_PAGE, default_timeout=60)
+    if work_id:
+        at.query_params["work_id"] = work_id
+    at.run()
+    assert not at.exception, at.exception
+    return at
+
+
+def card_text(at):
+    return " ".join(m.value for m in at.markdown)
+
+
+def test_report_page_needs_a_work():
+    at = load_report()
+    at.button[0].click().run()
+    assert any("select a work" in e.value for e in at.error)
+
+
+def test_report_page_preselects_from_url():
+    at = load_report("W-0003")
+    assert at.selectbox[0].value == "W-0003"
+
+
+def test_report_other_needs_description():
+    at = load_report("W-0001")
+    by_label(at.radio, "What is the problem").set_value("other").run()
+    at.button[0].click().run()
+    assert any("describe the problem" in e.value for e in at.error)
+
+
+def test_report_under_guarantee_goes_to_contractor():
+    at = load_report("W-0001")          # seed: guarantee ends in 3 days
+    at.button[0].click().run()
+    assert not at.exception
+    text = card_text(at)
+    assert "must repair FREE" in text and "Notice ID: D-" in text
+
+
+def test_report_old_work_goes_to_city():
+    at = load_report("W-0007")          # seed: guarantee ended years ago
+    at.button[0].click().run()
+    assert "city maintenance queue" in card_text(at)
+
+
+def test_report_in_gujarati():
+    at = load_report("W-0001")
+    at.radio[0].set_value("gu").run()
+    assert at.title[0].value.endswith("સમસ્યા નોંધાવો")
+    at.button[0].click().run()
+    assert "મફત સમારકામ" in card_text(at)

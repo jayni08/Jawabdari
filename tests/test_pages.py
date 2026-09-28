@@ -22,6 +22,23 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DB_PATH", str(tmp_path / "test.db"))
 
 
+ALL_PAGES = [
+    "app.py",
+    "pages/1_Register_Work.py",
+    "pages/2_Report_Defect.py",
+    "pages/3_Contractor_Portal.py",
+    "pages/4_Public_Board.py",
+]
+
+
+@pytest.mark.parametrize("page", ALL_PAGES)
+def test_every_page_runs_without_exceptions(page):
+    """Smoke test: each page loads on a fresh database without any error."""
+    at = AppTest.from_file(str(ROOT / page), default_timeout=60)
+    at.run()
+    assert not at.exception, f"{page}: {at.exception}"
+
+
 def load(path):
     at = AppTest.from_file(path, default_timeout=60)
     at.run()
